@@ -175,9 +175,9 @@ service cloud.firestore {
      */
     match /{path=**}/summaries/{summaryId} {
         // This rule allows a user to query the 'summaries' collection group.
-        // Firestore security rules ensure that the client query includes a 'where("userId", "==", request.auth.uid)' clause,
-        // which satisfies this condition.
-        allow list: if request.auth.uid == resource.data.userId;
+        // It's secured by ensuring the 'userId' field in the document being read
+        // matches the UID of the authenticated user making the request.
+        allow list: if isSignedIn() && request.auth.uid == resource.data.userId;
     }
   }
 }
