@@ -28,10 +28,15 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save } from "lucide-react";
-import { generateSummaryAction, saveHistoryAction } from "@/actions/documents";
+import { generateSummaryAction } from "@/actions/documents";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentData, SummaryData } from "@/lib/types";
-import { useUser } from "@/firebase";
+import {
+  useUser,
+  useFirestore,
+  addDocumentNonBlocking,
+  collection,
+} from "@/firebase";
 
 const audiences = ["Student", "Lawyer", "Researcher", "General Public"] as const;
 
@@ -46,6 +51,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const { user } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -73,26 +79,44 @@ export function SummaryView({ document }: { document: DocumentData }) {
   }
 
   const handleSave = async () => {
-    if (!summary || !user) return;
+    if (!summary || !user || !firestore) return;
     setSaving(true);
-    const result = await saveHistoryAction({
+
+    try {
+      const summariesRef = collection(
+        firestore,
+        "users",
+        user.uid,
+        "documents",
+        document.id,
+        "summaries"
+      );
+
+      await addDocumentNonBlocking(summariesRef, {
         userId: user.uid,
         documentId: document.id,
+        documentName: document.name,
         audience: summary.audience,
-        summary: summary.summary,
-        citationData: summary.citations.map(c => ({
-            pageNumber: c.page,
-            paragraphNumber: c.paragraph,
-            text: `Page ${c.page}, Paragraph ${c.paragraph}` // Mock text
-        }))
-    });
-    setSaving(false);
-    toast({
-        title: result.success ? "Success" : "Error",
-        description: result.message || result.error,
-        variant: result.success ? "default" : "destructive"
-    })
-  }
+        summaryText: summary.summary,
+        citations: summary.citations,
+        generationDate: new Date().toISOString(),
+      });
+
+      toast({
+        title: "Success",
+        description: "Your summary has been saved to your history.",
+      });
+    } catch (error) {
+      console.error("Error saving summary:", error);
+      toast({
+        title: "Error",
+        description: "Could not save summary. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Card>
@@ -144,11 +168,11 @@ export function SummaryView({ document }: { document: DocumentData }) {
 
       {loading && (
         <div className="px-6 pb-6">
-            <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
-                <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
-                <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
-                <div className="h-4 bg-muted rounded w-5/6 animate-pulse"></div>
-            </div>
+          <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
+            <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
+            <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
+            <div className="h-4 bg-muted rounded w-5/6 animate-pulse"></div>
+          </div>
         </div>
       )}
 
@@ -158,14 +182,13 @@ export function SummaryView({ document }: { document: DocumentData }) {
             <CardTitle>Summary for a {summary.audience}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <div
-              className="prose prose-sm max-w-none text-foreground"
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none text-foreground"
               dangerouslySetInnerHTML={{
-                __html: summary.summary
-                  .replace(/•/g, '<br/>•')
+                __html: summary.summary.replace(/•/g, "<br/>•"),
               }}
             />
-            
+
             <div>
               <h4 className="font-semibold mb-2">Citations</h4>
               <div className="space-y-1 text-xs text-muted-foreground">
@@ -179,8 +202,12 @@ export function SummaryView({ document }: { document: DocumentData }) {
           </CardContent>
           <CardFooter>
             <Button onClick={handleSave} disabled={saving}>
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save to History
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Save to History
             </Button>
           </CardFooter>
         </div>

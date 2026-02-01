@@ -16,11 +16,11 @@
  *   authentication UID (`request.auth.uid`) with the `{userId}` wildcard in the document path.
  * - No Cross-User Access: Users are completely siloed and cannot read, write, or even list
  *   data belonging to another user.
- * - No Public Listing: Listing documents is only permitted on a user's own subcollections.
- *   There are no publicly listable collections.
- * - Relational Integrity: On document creation, key relational fields (e.g., `userId`,
- *   `documentId`) are validated against the path parameters to ensure data consistency. These
- *   fields are then enforced as immutable on update.
+ * - No Public Listing: Listing all users is disallowed. Listing documents is only permitted on a
+ *   user's own subcollections.
+ * - Collection Group Queries: To allow users to view all their summaries on the 'History' page,
+ *   a collection group query on the `summaries` collection is permitted, but strictly filtered
+ *   to the requesting user's `userId`.
  *
  * Denormalization for Authorization:
  * This model is an excellent example of using the data structure for authorization. By nesting
@@ -28,10 +28,6 @@
  * calls to other documents to verify ownership. The authorization decision is made solely based
  * on the request's path and the user's authenticated UID.
  *
- * Structural Segregation:
- * The design perfectly segregates private data. All user-specific information, documents,
- * summaries, and chats are stored within their own isolated data tree, which simplifies
- * security rules and prevents accidental data leakage.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -95,33 +91,18 @@ service cloud.firestore {
     }
 
     /**
-     * On CREATE: Validates that the new Summary contains a `documentId` field
-     * that matches the parent document's path ID.
+     * On CREATE: Validates that the new Summary contains a `documentId` and `userId` field
+     * that matches the parent path IDs.
      */
-    function hasValidSummaryDataOnCreate(documentId) {
-      return request.resource.data.documentId == documentId;
+    function hasValidSummaryDataOnCreate(userId, documentId) {
+      return request.resource.data.userId == userId && request.resource.data.documentId == documentId;
     }
 
     /**
-     * On UPDATE: Enforces that the `documentId` field of a Summary is immutable.
+     * On UPDATE: Enforces that the `documentId` and `userId` fields of a Summary are immutable.
      */
     function hasValidSummaryDataOnUpdate() {
-      return request.resource.data.documentId == resource.data.documentId;
-    }
-
-    /**
-     * On CREATE: Validates that the new Citation contains a `summaryId` field
-     * that matches the parent summary's path ID.
-     */
-    function hasValidCitationDataOnCreate(summaryId) {
-      return request.resource.data.summaryId == summaryId;
-    }
-
-    /**
-     * On UPDATE: Enforces that the `summaryId` field of a Citation is immutable.
-     */
-    function hasValidCitationDataOnUpdate() {
-      return request.resource.data.summaryId == resource.data.summaryId;
+      return request.resource.data.documentId == resource.data.documentId && request.resource.data.userId == resource.data.userId;
     }
     
     /**
@@ -145,10 +126,6 @@ service cloud.firestore {
 
     /**
      * @description A user can create their own profile, and then only they can read, update, or delete it.
-     * @path        /users/{userId}
-     * @allow       A user with auth.uid = 'user_abc' (create) on `/users/user_abc`.
-     * @deny        A user with auth.uid = 'user_xyz' (get) on `/users/user_abc`.
-     * @principle   Restricts access to a user's own profile document.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
@@ -159,10 +136,6 @@ service cloud.firestore {
 
       /**
        * @description A user can manage all documents within their own user space.
-       * @path        /users/{userId}/documents/{documentId}
-       * @allow       A user with auth.uid = 'user_abc' (get, list, create, update, delete) on `/users/user_abc/documents/doc_123`.
-       * @deny        A user with auth.uid = 'user_xyz' (get) on `/users/user_abc/documents/doc_123`.
-       * @principle   Enforces document ownership by restricting all access to the user's own data tree.
        */
       match /documents/{documentId} {
         allow get, list: if isOwner(userId);
@@ -172,38 +145,16 @@ service cloud.firestore {
 
         /**
          * @description A user can manage summaries related to their own documents.
-         * @path        /users/{userId}/documents/{documentId}/summaries/{summaryId}
-         * @allow       A user with auth.uid = 'user_abc' (get) on `/users/user_abc/documents/doc_123/summaries/sum_456`.
-         * @deny        A user with auth.uid = 'user_xyz' (create) on `/users/user_abc/documents/doc_123/summaries/sum_456`.
-         * @principle   Inherits ownership from the parent user document.
          */
         match /summaries/{summaryId} {
           allow get, list: if isOwner(userId);
-          allow create: if isOwner(userId) && hasValidSummaryDataOnCreate(documentId);
+          allow create: if isOwner(userId) && hasValidSummaryDataOnCreate(userId, documentId);
           allow update: if isExistingOwner(userId) && hasValidSummaryDataOnUpdate();
           allow delete: if isExistingOwner(userId);
-
-          /**
-           * @description A user can manage citations related to their own summaries.
-           * @path        /users/{userId}/documents/{documentId}/summaries/{summaryId}/citations/{citationId}
-           * @allow       A user with auth.uid = 'user_abc' (delete) on `/users/user_abc/documents/doc_123/summaries/sum_456/citations/cit_789`.
-           * @deny        A user with auth.uid = 'user_xyz' (get) on `/users/user_abc/documents/doc_123/summaries/sum_456/citations/cit_789`.
-           * @principle   Inherits ownership from the parent user document.
-           */
-          match /citations/{citationId} {
-            allow get, list: if isOwner(userId);
-            allow create: if isOwner(userId) && hasValidCitationDataOnCreate(summaryId);
-            allow update: if isExistingOwner(userId) && hasValidCitationDataOnUpdate();
-            allow delete: if isExistingOwner(userId);
-          }
         }
         
         /**
          * @description A user can manage chat messages related to their own documents.
-         * @path        /users/{userId}/documents/{documentId}/chat_messages/{chatMessageId}
-         * @allow       A user with auth.uid = 'user_abc' (create) on `/users/user_abc/documents/doc_123/chat_messages/msg_001`.
-         * @deny        A user with auth.uid = 'user_xyz' (list) on `/users/user_abc/documents/doc_123/chat_messages`.
-         * @principle   Inherits ownership from the parent user document and validates relational integrity.
          */
         match /chat_messages/{chatMessageId} {
             allow get, list: if isOwner(userId);
@@ -212,6 +163,18 @@ service cloud.firestore {
             allow delete: if isExistingOwner(userId);
         }
       }
+    }
+    
+    // ----------------------------------------------------------------------
+    // Collection Group Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description Allows a user to list their own summaries across all documents for the 'History' page.
+     * @principle   Enables a required feature while maintaining strict user data isolation.
+     */
+    match /{path=**}/summaries/{summaryId} {
+        allow list: if isSignedIn() && request.query.get("where")[0][2] == request.auth.uid;
     }
   }
 }

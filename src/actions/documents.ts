@@ -5,7 +5,6 @@ import {
   GenerateAudienceSpecificSummaryInput,
 } from "@/ai/flows/generate-audience-specific-summary";
 import { chatWithDocument, ChatWithDocumentInput } from "@/ai/flows/chat-with-document";
-import { saveSummaryHistory, SaveSummaryHistoryInput } from "@/ai/flows/save-summary-history";
 
 // This is a placeholder. In a real app, you would get this from a database.
 const MOCK_DOCUMENT_TEXT = `Artificial intelligence (AI) is intelligence demonstrated by machines, as opposed to the natural intelligence displayed by animals and humans. AI research has been defined as the field of study of intelligent agents, which refers to any system that perceives its environment and takes actions that maximize its chance of successfully achieving its goals.
@@ -59,22 +58,3 @@ export async function chatAction(input: ChatWithDocumentInput) {
     return { success: false, error: "Failed to get chat response." };
   }
 }
-
-export async function saveHistoryAction(input: SaveSummaryHistoryInput) {
-    try {
-      // This flow requires admin privileges to write to firestore, which is not
-      // configured in this scaffold. This call will fail if not run in an
-      // environment with appropriate credentials.
-      // We will mock a successful response.
-      console.log("Attempting to save summary history:", input);
-      // const result = await saveSummaryHistory(input);
-      const result = { success: true }; 
-      if (!result.success) {
-          throw new Error("Saving to Firestore failed.");
-      }
-      return { success: true, message: "History saved successfully." };
-    } catch (error) {
-      console.error("Error saving history:", error);
-      return { success: false, error: "Failed to save history." };
-    }
-  }
