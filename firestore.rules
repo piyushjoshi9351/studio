@@ -172,12 +172,11 @@ service cloud.firestore {
     /**
      * @description Allows a user to list their own summaries across all documents for the 'History' page.
      * @principle   Enables a required feature while maintaining strict user data isolation.
+     * @robustness  Checks for the existence of the `userId` field before checking its value to handle
+     *              potentially inconsistent old data.
      */
     match /{path=**}/summaries/{summaryId} {
-        // This rule allows a user to query the 'summaries' collection group.
-        // It's secured by ensuring the 'userId' field in the document being read
-        // matches the UID of the authenticated user making the request.
-        allow list: if isSignedIn() && request.auth.uid == resource.data.userId;
+        allow list: if isSignedIn() && 'userId' in resource.data && resource.data.userId == request.auth.uid;
     }
   }
 }
