@@ -37,6 +37,8 @@ export default function HistoryPage() {
     );
   }, [firestore, user]);
 
+  console.log('Firestore Query for History Page:', summariesQuery);
+
   const { data: history, isLoading } = useCollection(summariesQuery);
 
   return (
