@@ -54,8 +54,8 @@ export function FileUpload() {
       const fileBuffer = await file.arrayBuffer();
 
       toast({
-        title: "Processing...",
-        description: "Extracting text from your document. Please wait.",
+        title: "Processing Document...",
+        description: "Extracting text can take a moment, especially for large files. Please wait.",
       });
 
       const text = await extractTextFromFile({
@@ -84,7 +84,7 @@ export function FileUpload() {
       toast({
         title: "Upload Failed",
         description:
-          error.message || "An unexpected error occurred during upload.",
+          "The server took too long to respond. This can happen with large files. Please try again with a smaller document.",
         variant: "destructive",
       });
       setLoading(false);

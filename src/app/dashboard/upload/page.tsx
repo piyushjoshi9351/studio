@@ -1,6 +1,8 @@
 import { FileUpload } from "@/components/dashboard/FileUpload";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+export const maxDuration = 60; // Increase timeout to 60 seconds
+
 export default function UploadPage() {
   return (
     <div className="space-y-8">
