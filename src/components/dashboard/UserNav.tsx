@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { getAuth, signOut } from "firebase/auth";
+import { useUser, useAuth as useFirebaseAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -14,15 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { clientApp } from "@/lib/firebase/client";
 import { LifeBuoy, LogOut, User } from "lucide-react";
 
 export function UserNav() {
-  const { user } = useAuth();
+  const { user } = useUser();
+  const auth = useFirebaseAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
-    const auth = getAuth(clientApp);
     await signOut(auth);
     router.push("/login");
   };

@@ -31,7 +31,7 @@ import { Loader2, Save } from "lucide-react";
 import { generateSummaryAction, saveHistoryAction } from "@/actions/documents";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentData, SummaryData } from "@/lib/types";
-import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/firebase";
 
 const audiences = ["Student", "Lawyer", "Researcher", "General Public"] as const;
 
@@ -45,7 +45,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const { user } = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({

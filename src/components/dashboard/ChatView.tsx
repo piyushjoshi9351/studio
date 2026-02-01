@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentData } from "@/lib/types";
-import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/firebase";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -27,7 +27,7 @@ const formSchema = z.object({
 export function ChatView({ document }: { document: DocumentData }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const { user } = useUser();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
