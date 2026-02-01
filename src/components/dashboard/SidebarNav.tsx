@@ -55,10 +55,12 @@ export function SidebarNav() {
       <SidebarFooter className="p-2 border-t border-sidebar-border mt-auto">
          <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Settings">
+              <Link href="/dashboard/settings" legacyBehavior passHref>
+                <SidebarMenuButton tooltip="Settings" isActive={pathname === "/dashboard/settings"}>
                     <Settings />
                     <span>Settings</span>
                 </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
          </SidebarMenu>
       </SidebarFooter>
