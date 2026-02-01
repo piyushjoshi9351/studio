@@ -19,7 +19,7 @@ export interface MindMapNode {
 }
 
 // Define the Zod schema using the interface and z.lazy() for recursion
-export const MindMapNodeSchema: z.ZodType<MindMapNode> = z.lazy(() =>
+const MindMapNodeSchema: z.ZodType<MindMapNode> = z.lazy(() =>
   z.object({
     id: z.string().describe('A unique ID for the node.'),
     label: z.string().describe('The text label for this node.'),
