@@ -1,0 +1,190 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Loader2, Save } from "lucide-react";
+import { generateSummaryAction, saveHistoryAction } from "@/actions/documents";
+import { useToast } from "@/hooks/use-toast";
+import { DocumentData, SummaryData } from "@/lib/types";
+import { useAuth } from "@/hooks/useAuth";
+
+const audiences = ["Student", "Lawyer", "Researcher", "General Public"] as const;
+
+const formSchema = z.object({
+  audience: z.enum(audiences, {
+    required_error: "Please select an audience.",
+  }),
+});
+
+export function SummaryView({ document }: { document: DocumentData }) {
+  const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+  });
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
+    setSummary(null);
+    const result = await generateSummaryAction({
+      text: document.text,
+      audience: values.audience,
+    });
+    setLoading(false);
+
+    if (result.success && result.data) {
+      setSummary({ ...result.data, audience: values.audience });
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to generate summary.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  const handleSave = async () => {
+    if (!summary || !user) return;
+    setSaving(true);
+    const result = await saveHistoryAction({
+        userId: user.uid,
+        documentId: document.id,
+        audience: summary.audience,
+        summary: summary.summary,
+        citationData: summary.citations.map(c => ({
+            pageNumber: c.page,
+            paragraphNumber: c.paragraph,
+            text: `Page ${c.page}, Paragraph ${c.paragraph}` // Mock text
+        }))
+    });
+    setSaving(false);
+    toast({
+        title: result.success ? "Success" : "Error",
+        description: result.message || result.error,
+        variant: result.success ? "default" : "destructive"
+    })
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Generate AI Summary</CardTitle>
+        <CardDescription>
+          Select an audience to tailor the summary to their perspective.
+        </CardDescription>
+      </CardHeader>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="audience"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Target Audience</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    disabled={loading}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an audience" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {audiences.map((audience) => (
+                        <SelectItem key={audience} value={audience}>
+                          {audience}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Generate Summary
+            </Button>
+          </CardFooter>
+        </form>
+      </Form>
+
+      {loading && (
+        <div className="px-6 pb-6">
+            <div className="space-y-2 p-4 border rounded-lg bg-muted/50">
+                <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
+                <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
+                <div className="h-4 bg-muted rounded w-5/6 animate-pulse"></div>
+            </div>
+        </div>
+      )}
+
+      {summary && (
+        <div className="border-t">
+          <CardHeader>
+            <CardTitle>Summary for a {summary.audience}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+             <div
+              className="prose prose-sm max-w-none text-foreground"
+              dangerouslySetInnerHTML={{
+                __html: summary.summary
+                  .replace(/•/g, '<br/>•')
+              }}
+            />
+            
+            <div>
+              <h4 className="font-semibold mb-2">Citations</h4>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                {summary.citations.map((citation, index) => (
+                  <p key={index}>
+                    - Page {citation.page}, Paragraph {citation.paragraph}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save to History
+            </Button>
+          </CardFooter>
+        </div>
+      )}
+    </Card>
+  );
+}
