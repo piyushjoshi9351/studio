@@ -145,9 +145,11 @@ service cloud.firestore {
 
         /**
          * @description A user can manage summaries related to their own documents.
+         *              Read access is handled by the collection group rule below.
          */
         match /summaries/{summaryId} {
-          allow get, list: if isOwner(userId);
+          allow get: if false; // Deny direct reads, force use of collection group query with security.
+          allow list: if false; // Deny direct lists, force use of collection group query with security.
           allow create: if isOwner(userId) && hasValidSummaryDataOnCreate(userId, documentId);
           allow update: if isExistingOwner(userId) && hasValidSummaryDataOnUpdate();
           allow delete: if isExistingOwner(userId);
@@ -171,12 +173,12 @@ service cloud.firestore {
 
     /**
      * @description Allows a user to list their own summaries across all documents for the 'History' page.
+     *              This single rule governs all read access to summaries.
      * @principle   Enables a required feature while maintaining strict user data isolation.
-     * @robustness  Checks for the existence of the `userId` field before checking its value to handle
-     *              potentially inconsistent old data.
+     * @robustness  The client query MUST contain `where("userId", "==", request.auth.uid)` for this to work.
      */
     match /{path=**}/summaries/{summaryId} {
-        allow list: if isSignedIn() && 'userId' in resource.data && resource.data.userId == request.auth.uid;
+        allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
     }
   }
 }
