@@ -11,12 +11,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const AnalyzeDocumentToneInputSchema = z.object({
+const AnalyzeDocumentToneInputSchema = z.object({
   documentText: z.string().describe('The text content of the document to analyze.'),
 });
 export type AnalyzeDocumentToneInput = z.infer<typeof AnalyzeDocumentToneInputSchema>;
 
-export const AnalyzeDocumentToneOutputSchema = z.object({
+const AnalyzeDocumentToneOutputSchema = z.object({
   sentiment: z.string().describe("The overall sentiment of the document (e.g., Positive, Negative, Neutral, Mixed)."),
   tones: z.array(z.string()).describe("A list of 2-4 dominant tones found in the text (e.g., Formal, Optimistic, Critical)."),
   writingStyle: z.string().describe("The primary writing style (e.g., Academic, Narrative, Persuasive, Technical)."),
