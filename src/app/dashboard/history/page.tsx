@@ -19,11 +19,9 @@ import {
   useUser,
   useFirestore,
   useCollection,
-  collectionGroup,
-  query,
-  where,
   useMemoFirebase,
 } from "@/firebase";
+import { collectionGroup, query, where } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -73,7 +71,7 @@ export default function HistoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {history.map((item) => (
+                {history.map((item: any) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">
                       {item.documentName}

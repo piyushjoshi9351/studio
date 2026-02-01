@@ -35,8 +35,8 @@ import {
   useUser,
   useFirestore,
   addDocumentNonBlocking,
-  collection,
 } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 const audiences = ["Student", "Lawyer", "Researcher", "General Public"] as const;
 
