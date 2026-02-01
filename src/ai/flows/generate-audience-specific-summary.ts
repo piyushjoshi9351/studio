@@ -40,56 +40,21 @@ export async function generateAudienceSpecificSummary(
   return generateAudienceSpecificSummaryFlow(input);
 }
 
-const relevanceRankerTool = ai.defineTool({
-  name: 'relevanceRanker',
-  description: 'Ranks the relevance of sections of the document for the requested audience.',
-  inputSchema: z.object({
-    documentText: z.string().describe('The complete document text.'),
-    audience: z
-      .enum(['Student', 'Lawyer', 'Researcher', 'General Public'])
-      .describe('The intended audience.'),
-    language: z
-      .enum(['English', 'Spanish', 'French', 'German', 'Hindi'])
-      .describe('The language for the summary.'),
-  }),
-  outputSchema: z.array(z.object({
-    page: z.number().describe('Page number of the relevant section'),
-    paragraph: z.number().describe('Paragraph number of the relevant section'),
-    relevanceScore: z.number().describe('Relevance score (0-1) for this section.'),
-    text: z.string().describe('Text of the relevant section')
-  })).describe('Sections of the document ranked by relevance to the audience')
-  },
-  async (input) => {
-    // Placeholder implementation for relevance ranking.  **IMPLEMENT THIS**
-    // In a real application, this would use a more sophisticated method
-    // to determine the relevance of each section to the specified audience.
-    const sections = input.documentText.split('\n\n').map((paragraph, index) => ({
-      page: 1, // Assume single page for now
-      paragraph: index + 1,
-      relevanceScore: Math.random(), // Dummy relevance score
-      text: paragraph
-    }));
-    return sections.sort((a, b) => b.relevanceScore - a.relevanceScore);
-  }
-);
-
 const prompt = ai.definePrompt({
   name: 'generateAudienceSpecificSummaryPrompt',
   input: {schema: GenerateAudienceSpecificSummaryInputSchema},
   output: {schema: GenerateAudienceSpecificSummaryOutputSchema},
-  tools: [relevanceRankerTool],
   prompt: `You are an expert summarizer, tailoring summaries to specific audiences.
 
   Summarize the following document for the given audience. Provide the summary in bullet points.
-  Include citation references (page and paragraph numbers) for each bullet point.
+  Include citation references (page and paragraph numbers) for each bullet point. For citations, make your best guess if page/paragraph numbers are not explicitly available in the text, you can use page 1 and an approximate paragraph number.
 
   The summary must be in {{{language}}}.
 
   Audience: {{{audience}}}
 
-  Here's the document text: {{{text}}}
-
-  Consider the output of the relevanceRanker tool when generating the summary.
+  Document Text:
+  {{{text}}}
 `,
 });
 
@@ -100,19 +65,7 @@ const generateAudienceSpecificSummaryFlow = ai.defineFlow(
     outputSchema: GenerateAudienceSpecificSummaryOutputSchema,
   },
   async input => {
-    const rankedSections = await relevanceRankerTool({
-      documentText: input.text,
-      audience: input.audience,
-      language: input.language,
-    });
-
-    // Limit to top 5 most relevant sections for the prompt to save tokens.
-    const topSections = rankedSections.slice(0, 5);
-
-    const {output} = await prompt({
-      ...input,
-      text: topSections.map(s => `Page ${s.page}, Paragraph ${s.paragraph}: ${s.text}`).join('\n'), // Only pass the relevant sections
-    });
+    const {output} = await prompt(input);
     return output!;
   }
 );
