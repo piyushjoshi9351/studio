@@ -11,15 +11,21 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const MindMapNodeSchema = z.object({
-  id: z.string().describe('A unique ID for the node.'),
-  label: z.string().describe('The text label for this node.'),
-  children: z
-    .array(z.lazy(() => MindMapNodeSchema))
-    .optional()
-    .describe('An array of child nodes.'),
-});
-export type MindMapNode = z.infer<typeof MindMapNodeSchema>;
+// Define the interface for the recursive type
+export interface MindMapNode {
+  id: string;
+  label: string;
+  children?: MindMapNode[];
+}
+
+// Define the Zod schema using the interface and z.lazy() for recursion
+export const MindMapNodeSchema: z.ZodType<MindMapNode> = z.lazy(() =>
+  z.object({
+    id: z.string().describe('A unique ID for the node.'),
+    label: z.string().describe('The text label for this node.'),
+    children: z.array(MindMapNodeSchema).optional().describe('An array of child nodes.'),
+  })
+);
 
 const GenerateMindMapInputSchema = z.object({
   documentText: z.string().describe('The text content of the document.'),
