@@ -4,6 +4,7 @@ import { placeHolderImages } from "@/lib/placeholder-images";
 import { BrainCircuit, FileText, MessagesSquare, Lightbulb, Share2, PenTool } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { DemoButton } from "@/components/home/DemoButton";
 
 export default function Home() {
   const heroImage = placeHolderImages.find(p => p.id === "hero");
@@ -39,9 +40,7 @@ export default function Home() {
               <Button size="lg" asChild className="shadow-lg shadow-primary/20">
                 <Link href="/register">Start for Free</Link>
               </Button>
-              <Button size="lg" variant="outline">
-                View Demo
-              </Button>
+              <DemoButton />
             </div>
           </div>
         </section>
