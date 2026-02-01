@@ -1,19 +1,55 @@
-import { getDocument } from "@/actions/documents";
+"use client";
+
+import {
+  useUser,
+  useFirestore,
+  useDoc,
+  useMemoFirebase,
+} from "@/firebase";
 import { ChatView } from "@/components/dashboard/ChatView";
 import { SummaryView } from "@/components/dashboard/SummaryView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText } from "lucide-react";
-import { notFound } from "next/navigation";
+import { FileText, Loader2 } from "lucide-react";
+import { useParams } from "next/navigation";
+import { doc } from "firebase/firestore";
+import { DocumentData } from "@/lib/types";
 
-export default async function DocumentPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const document = await getDocument(params.id);
+export default function DocumentPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const docRef = useMemoFirebase(() => {
+    if (!user || !id) return null;
+    return doc(firestore, "users", user.uid, "documents", id);
+  }, [firestore, user, id]);
+
+  const {
+    data: document,
+    isLoading,
+    error,
+  } = useDoc<DocumentData>(docRef);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-500">
+        <p>Error loading document.</p>
+        <p className="text-sm">{error.message}</p>
+      </div>
+    );
+  }
 
   if (!document) {
-    notFound();
+    return <div className="text-center">Document not found.</div>;
   }
 
   return (
@@ -21,10 +57,12 @@ export default async function DocumentPage({
       <div className="flex items-center gap-4">
         <FileText className="h-8 w-8 text-primary" />
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">{document.name}</h1>
-            <p className="text-sm text-muted-foreground">
-                Uploaded on {new Date(document.createdAt).toLocaleDateString()}
-            </p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {document.fileName}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Uploaded on {new Date(document.uploadDate).toLocaleDateString()}
+          </p>
         </div>
       </div>
 
@@ -34,10 +72,10 @@ export default async function DocumentPage({
           <TabsTrigger value="chat">Chat with Document</TabsTrigger>
         </TabsList>
         <TabsContent value="summary">
-            <SummaryView document={document} />
+          <SummaryView document={document} />
         </TabsContent>
         <TabsContent value="chat">
-            <ChatView document={document} />
+          <ChatView document={document} />
         </TabsContent>
       </Tabs>
     </div>
