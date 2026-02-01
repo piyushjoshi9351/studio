@@ -1,0 +1,217 @@
+/**
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model. All data is considered private and
+ * is only accessible by the user who created it. There is no concept of public data or
+ * shared access between users in this model. The default security posture is to deny all
+ * access unless explicitly permitted.
+ *
+ * Data Structure:
+ * All application data is organized hierarchically under a user's root document. The
+ * structure `/users/{userId}/{subcollection}/{documentId}` is used for all data entities.
+ * This path-based ownership is the cornerstone of the security model, allowing for simple,
+ * performant, and highly secure rules.
+ *
+ * Key Security Decisions:
+ * - Strict Path-Based Ownership: A user's access is determined entirely by matching their
+ *   authentication UID (`request.auth.uid`) with the `{userId}` wildcard in the document path.
+ * - No Cross-User Access: Users are completely siloed and cannot read, write, or even list
+ *   data belonging to another user.
+ * - No Public Listing: Listing documents is only permitted on a user's own subcollections.
+ *   There are no publicly listable collections.
+ * - Relational Integrity: On document creation, key relational fields (e.g., `userId`,
+ *   `documentId`) are validated against the path parameters to ensure data consistency. These
+ *   fields are then enforced as immutable on update.
+ *
+ * Denormalization for Authorization:
+ * This model is an excellent example of using the data structure for authorization. By nesting
+ * all user-content within a `/users/{userId}` path, we avoid the need for slow and costly `get()`
+ * calls to other documents to verify ownership. The authorization decision is made solely based
+ * on the request's path and the user's authenticated UID.
+ *
+ * Structural Segregation:
+ * The design perfectly segregates private data. All user-specific information, documents,
+ * summaries, and chats are stored within their own isolated data tree, which simplifies
+ * security rules and prevents accidental data leakage.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------------------------------------------------
+    // Helper Functions
+    // ----------------------------------------------------------------------
+
+    /**
+     * Verifies that a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Verifies that the authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing user ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * A robust check for update/delete operations, ensuring the user is the owner
+     * AND the document actually exists before the operation.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * On CREATE: Validates that the new User document contains an `id` field
+     * that matches the document's path ID.
+     */
+    function hasValidUserDataOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * On UPDATE: Enforces that the `id` field of a User document is immutable.
+     */
+    function hasValidUserDataOnUpdate() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * On CREATE: Validates that the new Document contains a `userId` field
+     * that matches the user's path ID.
+     */
+    function hasValidDocumentDataOnCreate(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * On UPDATE: Enforces that the `userId` field of a Document is immutable.
+     */
+    function hasValidDocumentDataOnUpdate() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * On CREATE: Validates that the new Summary contains a `documentId` field
+     * that matches the parent document's path ID.
+     */
+    function hasValidSummaryDataOnCreate(documentId) {
+      return request.resource.data.documentId == documentId;
+    }
+
+    /**
+     * On UPDATE: Enforces that the `documentId` field of a Summary is immutable.
+     */
+    function hasValidSummaryDataOnUpdate() {
+      return request.resource.data.documentId == resource.data.documentId;
+    }
+
+    /**
+     * On CREATE: Validates that the new Citation contains a `summaryId` field
+     * that matches the parent summary's path ID.
+     */
+    function hasValidCitationDataOnCreate(summaryId) {
+      return request.resource.data.summaryId == summaryId;
+    }
+
+    /**
+     * On UPDATE: Enforces that the `summaryId` field of a Citation is immutable.
+     */
+    function hasValidCitationDataOnUpdate() {
+      return request.resource.data.summaryId == resource.data.summaryId;
+    }
+    
+    /**
+     * On CREATE: Validates that the new ChatMessage contains `userId` and `documentId`
+     * fields that match the parent path IDs.
+     */
+    function hasValidChatMessageDataOnCreate(userId, documentId) {
+      return request.resource.data.userId == userId && request.resource.data.documentId == documentId;
+    }
+    
+    /**
+     * On UPDATE: Enforces that the `userId` and `documentId` fields of a ChatMessage are immutable.
+     */
+    function hasValidChatMessageDataOnUpdate() {
+      return request.resource.data.userId == resource.data.userId && request.resource.data.documentId == resource.data.documentId;
+    }
+
+    // ----------------------------------------------------------------------
+    // Collection Rules
+    // ----------------------------------------------------------------------
+
+    /**
+     * @description A user can create their own profile, and then only they can read, update, or delete it.
+     * @path        /users/{userId}
+     * @allow       A user with auth.uid = 'user_abc' (create) on `/users/user_abc`.
+     * @deny        A user with auth.uid = 'user_xyz' (get) on `/users/user_abc`.
+     * @principle   Restricts access to a user's own profile document.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Disallow listing all users in the database.
+      allow create: if isOwner(userId) && hasValidUserDataOnCreate(userId);
+      allow update: if isExistingOwner(userId) && hasValidUserDataOnUpdate();
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description A user can manage all documents within their own user space.
+       * @path        /users/{userId}/documents/{documentId}
+       * @allow       A user with auth.uid = 'user_abc' (get, list, create, update, delete) on `/users/user_abc/documents/doc_123`.
+       * @deny        A user with auth.uid = 'user_xyz' (get) on `/users/user_abc/documents/doc_123`.
+       * @principle   Enforces document ownership by restricting all access to the user's own data tree.
+       */
+      match /documents/{documentId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidDocumentDataOnCreate(userId);
+        allow update: if isExistingOwner(userId) && hasValidDocumentDataOnUpdate();
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description A user can manage summaries related to their own documents.
+         * @path        /users/{userId}/documents/{documentId}/summaries/{summaryId}
+         * @allow       A user with auth.uid = 'user_abc' (get) on `/users/user_abc/documents/doc_123/summaries/sum_456`.
+         * @deny        A user with auth.uid = 'user_xyz' (create) on `/users/user_abc/documents/doc_123/summaries/sum_456`.
+         * @principle   Inherits ownership from the parent user document.
+         */
+        match /summaries/{summaryId} {
+          allow get, list: if isOwner(userId);
+          allow create: if isOwner(userId) && hasValidSummaryDataOnCreate(documentId);
+          allow update: if isExistingOwner(userId) && hasValidSummaryDataOnUpdate();
+          allow delete: if isExistingOwner(userId);
+
+          /**
+           * @description A user can manage citations related to their own summaries.
+           * @path        /users/{userId}/documents/{documentId}/summaries/{summaryId}/citations/{citationId}
+           * @allow       A user with auth.uid = 'user_abc' (delete) on `/users/user_abc/documents/doc_123/summaries/sum_456/citations/cit_789`.
+           * @deny        A user with auth.uid = 'user_xyz' (get) on `/users/user_abc/documents/doc_123/summaries/sum_456/citations/cit_789`.
+           * @principle   Inherits ownership from the parent user document.
+           */
+          match /citations/{citationId} {
+            allow get, list: if isOwner(userId);
+            allow create: if isOwner(userId) && hasValidCitationDataOnCreate(summaryId);
+            allow update: if isExistingOwner(userId) && hasValidCitationDataOnUpdate();
+            allow delete: if isExistingOwner(userId);
+          }
+        }
+        
+        /**
+         * @description A user can manage chat messages related to their own documents.
+         * @path        /users/{userId}/documents/{documentId}/chat_messages/{chatMessageId}
+         * @allow       A user with auth.uid = 'user_abc' (create) on `/users/user_abc/documents/doc_123/chat_messages/msg_001`.
+         * @deny        A user with auth.uid = 'user_xyz' (list) on `/users/user_abc/documents/doc_123/chat_messages`.
+         * @principle   Inherits ownership from the parent user document and validates relational integrity.
+         */
+        match /chat_messages/{chatMessageId} {
+            allow get, list: if isOwner(userId);
+            allow create: if isOwner(userId) && hasValidChatMessageDataOnCreate(userId, documentId);
+            allow update: if isExistingOwner(userId) && hasValidChatMessageDataOnUpdate();
+            allow delete: if isExistingOwner(userId);
+        }
+      }
+    }
+  }
+}
