@@ -16,6 +16,9 @@ const GenerateAudienceSpecificSummaryInputSchema = z.object({
   audience: z
     .enum(['Student', 'Lawyer', 'Researcher', 'General Public'])
     .describe('The target audience for the summary.'),
+  language: z
+    .enum(['English', 'Spanish', 'French', 'German', 'Hindi'])
+    .describe('The language for the summary.'),
 });
 export type GenerateAudienceSpecificSummaryInput = z.infer<
   typeof GenerateAudienceSpecificSummaryInputSchema
@@ -45,6 +48,9 @@ const relevanceRankerTool = ai.defineTool({
     audience: z
       .enum(['Student', 'Lawyer', 'Researcher', 'General Public'])
       .describe('The intended audience.'),
+    language: z
+      .enum(['English', 'Spanish', 'French', 'German', 'Hindi'])
+      .describe('The language for the summary.'),
   }),
   outputSchema: z.array(z.object({
     page: z.number().describe('Page number of the relevant section'),
@@ -77,6 +83,8 @@ const prompt = ai.definePrompt({
   Summarize the following document for the given audience. Provide the summary in bullet points.
   Include citation references (page and paragraph numbers) for each bullet point.
 
+  The summary must be in {{{language}}}.
+
   Audience: {{{audience}}}
 
   Here's the document text: {{{text}}}
@@ -94,7 +102,8 @@ const generateAudienceSpecificSummaryFlow = ai.defineFlow(
   async input => {
     const rankedSections = await relevanceRankerTool({
       documentText: input.text,
-      audience: input.audience
+      audience: input.audience,
+      language: input.language,
     });
 
     // Limit to top 5 most relevant sections for the prompt to save tokens.

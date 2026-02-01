@@ -12,4 +12,5 @@ export type SummaryData = {
         paragraph: number;
     }[];
     audience: string;
+    language: string;
 };

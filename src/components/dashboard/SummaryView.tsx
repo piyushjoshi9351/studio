@@ -39,10 +39,14 @@ import {
 import { collection } from "firebase/firestore";
 
 const audiences = ["Student", "Lawyer", "Researcher", "General Public"] as const;
+const languages = ["English", "Spanish", "French", "German", "Hindi"] as const;
 
 const formSchema = z.object({
   audience: z.enum(audiences, {
     required_error: "Please select an audience.",
+  }),
+  language: z.enum(languages, {
+    required_error: "Please select a language.",
   }),
 });
 
@@ -56,6 +60,9 @@ export function SummaryView({ document }: { document: DocumentData }) {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      language: "English",
+    },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -64,11 +71,12 @@ export function SummaryView({ document }: { document: DocumentData }) {
     const result = await generateSummaryAction({
       text: document.text,
       audience: values.audience,
+      language: values.language,
     });
     setLoading(false);
 
     if (result.success && result.data) {
-      setSummary({ ...result.data, audience: values.audience });
+      setSummary({ ...result.data, audience: values.audience, language: values.language });
     } else {
       toast({
         title: "Error",
@@ -123,39 +131,68 @@ export function SummaryView({ document }: { document: DocumentData }) {
       <CardHeader>
         <CardTitle>Generate AI Summary</CardTitle>
         <CardDescription>
-          Select an audience to tailor the summary to their perspective.
+          Select an audience and language to tailor the summary.
         </CardDescription>
       </CardHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="audience"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target Audience</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={loading}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an audience" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {audiences.map((audience) => (
-                        <SelectItem key={audience} value={audience}>
-                          {audience}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="audience"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Target Audience</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={loading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an audience" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {audiences.map((audience) => (
+                          <SelectItem key={audience} value={audience}>
+                            {audience}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="language"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Language</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={loading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a language" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {languages.map((language) => (
+                          <SelectItem key={language} value={language}>
+                            {language}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+            </div>
           </CardContent>
           <CardFooter>
             <Button type="submit" disabled={loading}>
@@ -179,7 +216,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
       {summary && (
         <div className="border-t">
           <CardHeader>
-            <CardTitle>Summary for a {summary.audience}</CardTitle>
+            <CardTitle>Summary for a {summary.audience} in {summary.language}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div
