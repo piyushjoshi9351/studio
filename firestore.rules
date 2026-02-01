@@ -176,9 +176,12 @@ service cloud.firestore {
      *              This single rule governs all read access to summaries.
      * @principle   Enables a required feature while maintaining strict user data isolation.
      * @robustness  The client query MUST contain `where("userId", "==", request.auth.uid)` for this to work.
+     *              This rule is now robust against data that might be missing a userId field.
      */
     match /{path=**}/summaries/{summaryId} {
-        allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+        allow read: if isSignedIn()
+                      && 'userId' in resource.data
+                      && request.auth.uid == resource.data.userId;
     }
   }
 }
