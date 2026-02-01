@@ -16,12 +16,16 @@ import {
   FileUp,
   BookCopy,
   Settings,
+  Share2,
+  PenTool,
 } from "lucide-react";
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/dashboard/upload", label: "Upload", icon: FileUp },
   { href: "/dashboard/history", label: "History", icon: BookCopy },
+  { href: "/dashboard/mind-map", label: "Mind Map", icon: Share2 },
+  { href: "/dashboard/analysis", label: "Analysis", icon: PenTool },
 ];
 
 export function SidebarNav() {

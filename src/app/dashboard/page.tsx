@@ -10,28 +10,32 @@ const actionCards = [
         description: "Generate a summary for any audience.",
         icon: FileUp,
         href: "/dashboard/upload",
-        color: "text-primary"
+        color: "text-primary",
+        cta: "Go to Upload"
     },
     {
         title: "Chat with Document",
         description: "Ask questions and get answers.",
         icon: MessageSquare,
         href: "/dashboard/upload",
-        color: "text-accent"
+        color: "text-accent",
+        cta: "Go to Upload"
     },
     {
         title: "Generate Mind Map",
         description: "Visualize key concepts.",
         icon: Share2,
-        href: "/dashboard/upload",
-        color: "text-green-500"
+        href: "/dashboard/mind-map",
+        color: "text-green-500",
+        cta: "Explore Feature"
     },
     {
         title: "Analyze Tone & Style",
         description: "Understand the author's voice.",
         icon: PenTool,
-        href: "/dashboard/upload",
-        color: "text-yellow-500"
+        href: "/dashboard/analysis",
+        color: "text-yellow-500",
+        cta: "Explore Feature"
     },
 ]
 
@@ -62,7 +66,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center text-sm text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        Go to Upload <ArrowRight className="ml-2 h-4 w-4" />
+                        {card.cta} <ArrowRight className="ml-2 h-4 w-4" />
                     </div>
                 </CardContent>
             </Card>
