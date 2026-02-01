@@ -103,7 +103,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
       await addDocumentNonBlocking(summariesRef, {
         userId: user.uid,
         documentId: document.id,
-        documentName: document.name,
+        documentName: document.fileName,
         audience: summary.audience,
         summaryText: summary.summary,
         citations: summary.citations,
