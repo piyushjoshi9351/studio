@@ -89,21 +89,6 @@ service cloud.firestore {
     function hasValidDocumentDataOnUpdate() {
       return request.resource.data.userId == resource.data.userId;
     }
-
-    /**
-     * On CREATE: Validates that the new Summary contains a `documentId` and `userId` field
-     * that matches the parent path IDs.
-     */
-    function hasValidSummaryDataOnCreate(userId, documentId) {
-      return request.resource.data.userId == userId && request.resource.data.documentId == documentId;
-    }
-
-    /**
-     * On UPDATE: Enforces that the `documentId` and `userId` fields of a Summary are immutable.
-     */
-    function hasValidSummaryDataOnUpdate() {
-      return request.resource.data.documentId == resource.data.documentId && request.resource.data.userId == resource.data.userId;
-    }
     
     /**
      * On CREATE: Validates that the new ChatMessage contains `userId` and `documentId`
@@ -142,16 +127,6 @@ service cloud.firestore {
         allow create: if isOwner(userId) && hasValidDocumentDataOnCreate(userId);
         allow update: if isExistingOwner(userId) && hasValidDocumentDataOnUpdate();
         allow delete: if isExistingOwner(userId);
-
-        /**
-         * @description A user can manage summaries related to their own documents.
-         *              Read access is handled by the collection group rule below.
-         */
-        match /summaries/{summaryId} {
-          allow create: if isOwner(userId) && hasValidSummaryDataOnCreate(userId, documentId);
-          allow update: if isExistingOwner(userId) && hasValidSummaryDataOnUpdate();
-          allow delete: if isExistingOwner(userId);
-        }
         
         /**
          * @description A user can manage chat messages related to their own documents.
@@ -170,16 +145,35 @@ service cloud.firestore {
     // ----------------------------------------------------------------------
 
     /**
-     * @description Allows a user to list their own summaries across all documents for the 'History' page.
-     *              This single rule governs all read access to summaries.
-     * @principle   Enables a required feature while maintaining strict user data isolation.
-     * @robustness  The client query MUST contain `where("userId", "==", request.auth.uid)` for this to work.
-     *              This rule is now robust against data that might be missing a userId field.
+     * @description This single rule governs all access to the `summaries` collection group.
+     *              It ensures users can only access their own summaries.
      */
     match /{path=**}/summaries/{summaryId} {
-        allow read: if isSignedIn()
-                      && 'userId' in resource.data
-                      && request.auth.uid == resource.data.userId;
+      /**
+       * @description Allows a user to read their own summaries. This enables the collection group query
+       *              for the 'History' page. The client query MUST filter by `userId`.
+       * @robustness  The `&& 'userId' in resource.data` check ensures the query doesn't fail if old
+       *              documents are missing the `userId` field.
+       */
+      allow read: if isSignedIn() 
+                    && 'userId' in resource.data 
+                    && request.auth.uid == resource.data.userId;
+
+      /**
+       * @description Allows a user to create a summary if the new document's `userId` matches
+       *              their own authenticated UID.
+       */
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      /**
+       * @description Allows a user to update or delete a summary if the existing document's `userId`
+       *              matches their own authenticated UID. Also ensures the userId cannot be changed.
+       */
+      allow update: if isSignedIn() 
+                      && resource.data.userId == request.auth.uid
+                      && request.resource.data.userId == resource.data.userId;
+
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }
