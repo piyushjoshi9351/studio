@@ -12,6 +12,10 @@ import {
   generateMindMap,
   GenerateMindMapInput,
 } from "@/ai/flows/generate-mind-map";
+import {
+  analyzeDocumentTone,
+  AnalyzeDocumentToneInput,
+} from "@/ai/flows/analyze-document-tone";
 import mammoth from "mammoth";
 import pdf from "pdf-parse";
 
@@ -72,5 +76,15 @@ export async function generateMindMapAction(input: GenerateMindMapInput) {
   } catch (error) {
     console.error("Error generating mind map:", error);
     return { success: false, error: "Failed to generate mind map." };
+  }
+}
+
+export async function analyzeDocumentToneAction(input: AnalyzeDocumentToneInput) {
+  try {
+    const result = await analyzeDocumentTone(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error analyzing document tone:", error);
+    return { success: false, error: "Failed to analyze document." };
   }
 }
