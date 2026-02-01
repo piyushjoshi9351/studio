@@ -27,15 +27,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save } from "lucide-react";
-import { generateSummaryAction } from "@/actions/documents";
+import { Loader2, Save, Volume2 } from "lucide-react";
+import {
+  generateSummaryAction,
+  generateAudioSummaryAction,
+} from "@/actions/documents";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentData, SummaryData } from "@/lib/types";
-import {
-  useUser,
-  useFirestore,
-  addDocumentNonBlocking,
-} from "@/firebase";
+import { useUser, useFirestore, addDocumentNonBlocking } from "@/firebase";
 import { collection } from "firebase/firestore";
 
 const audiences = ["Student", "Lawyer", "Researcher", "General Public"] as const;
@@ -54,6 +53,8 @@ export function SummaryView({ document }: { document: DocumentData }) {
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -68,6 +69,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
     setSummary(null);
+    setAudioSrc(null);
     const result = await generateSummaryAction({
       text: document.text,
       audience: values.audience,
@@ -76,7 +78,11 @@ export function SummaryView({ document }: { document: DocumentData }) {
     setLoading(false);
 
     if (result.success && result.data) {
-      setSummary({ ...result.data, audience: values.audience, language: values.language });
+      setSummary({
+        ...result.data,
+        audience: values.audience,
+        language: values.language,
+      });
     } else {
       toast({
         title: "Error",
@@ -123,6 +129,26 @@ export function SummaryView({ document }: { document: DocumentData }) {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleListen = async () => {
+    if (!summary) return;
+    setIsGeneratingAudio(true);
+    setAudioSrc(null);
+
+    const result = await generateAudioSummaryAction({ text: summary.summary });
+
+    setIsGeneratingAudio(false);
+    if (result.success && result.data) {
+      setAudioSrc(result.data.audioDataUri);
+    } else {
+      toast({
+        title: "Audio Generation Failed",
+        description:
+          result.error || "Could not generate audio for the summary.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -216,7 +242,9 @@ export function SummaryView({ document }: { document: DocumentData }) {
       {summary && (
         <div className="border-t">
           <CardHeader>
-            <CardTitle>Summary for a {summary.audience} in {summary.language}</CardTitle>
+            <CardTitle>
+              Summary for a {summary.audience} in {summary.language}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div
@@ -237,7 +265,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
               </div>
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex-wrap gap-2">
             <Button onClick={handleSave} disabled={saving}>
               {saving ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -246,7 +274,26 @@ export function SummaryView({ document }: { document: DocumentData }) {
               )}
               Save to History
             </Button>
+            <Button
+              onClick={handleListen}
+              disabled={isGeneratingAudio}
+              variant="outline"
+            >
+              {isGeneratingAudio ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Volume2 className="mr-2 h-4 w-4" />
+              )}
+              Listen to Summary
+            </Button>
           </CardFooter>
+          {audioSrc && (
+            <CardContent>
+              <audio controls src={audioSrc} className="w-full">
+                Your browser does not support the audio element.
+              </audio>
+            </CardContent>
+          )}
         </div>
       )}
     </Card>

@@ -16,6 +16,10 @@ import {
   analyzeDocumentTone,
   AnalyzeDocumentToneInput,
 } from "@/ai/flows/analyze-document-tone";
+import {
+  generateAudioSummary,
+  GenerateAudioSummaryInput,
+} from "@/ai/flows/generate-audio-summary";
 import mammoth from "mammoth";
 import pdf from "pdf-parse";
 
@@ -79,12 +83,26 @@ export async function generateMindMapAction(input: GenerateMindMapInput) {
   }
 }
 
-export async function analyzeDocumentToneAction(input: AnalyzeDocumentToneInput) {
+export async function analyzeDocumentToneAction(
+  input: AnalyzeDocumentToneInput
+) {
   try {
     const result = await analyzeDocumentTone(input);
     return { success: true, data: result };
   } catch (error) {
     console.error("Error analyzing document tone:", error);
     return { success: false, error: "Failed to analyze document." };
+  }
+}
+
+export async function generateAudioSummaryAction(
+  input: GenerateAudioSummaryInput
+) {
+  try {
+    const result = await generateAudioSummary(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error generating audio summary:", error);
+    return { success: false, error: "Failed to generate audio summary." };
   }
 }
