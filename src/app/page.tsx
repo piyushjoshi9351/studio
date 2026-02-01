@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { placeHolderImages } from "@/lib/placeholder-images";
-import { BrainCircuit, FileText, MessagesSquare, Lightbulb, Share2, PenTool } from "lucide-react";
+import { BrainCircuit, FileText, MessagesSquare, Languages, Share2, PenTool } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { DemoButton } from "@/components/home/DemoButton";
@@ -74,7 +74,7 @@ export default function Home() {
                 { icon: Share2, title: "Mind Map Generation", description: "Visualize key concepts and connections with automatically generated mind maps." },
                 { icon: PenTool, title: "Tone & Style Analysis", description: "Analyze the writing style, sentiment, and tone of your documents." },
                 { icon: FileText, title: "Secure & Private", description: "Your data is encrypted and private. We never train our models on your documents." },
-                { icon: Lightbulb, title: "Insight Extraction", description: "Automatically pull key terms, dates, and named entities from your text." },
+                { icon: Languages, title: "Multi-Language Support", description: "Generate summaries and insights in multiple languages, including English, Spanish, French, and more." },
               ].map(feature => (
                 <Card key={feature.title} className="text-center bg-card/80 backdrop-blur-sm border-border/50 transition-all duration-300 hover:border-primary/50 hover:shadow-primary/10 hover:shadow-xl hover:-translate-y-2">
                   <CardHeader>
