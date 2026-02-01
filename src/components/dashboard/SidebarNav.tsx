@@ -12,16 +12,16 @@ import {
 } from "@/components/ui/sidebar";
 import {
   BrainCircuit,
-  LayoutDashboard,
-  Upload,
-  History,
+  Home,
+  FileUp,
+  BookCopy,
   Settings,
 } from "lucide-react";
 
 const menuItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/upload", label: "Upload", icon: Upload },
-  { href: "/dashboard/history", label: "History", icon: History },
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/dashboard/upload", label: "Upload", icon: FileUp },
+  { href: "/dashboard/history", label: "History", icon: BookCopy },
 ];
 
 export function SidebarNav() {
@@ -31,7 +31,7 @@ export function SidebarNav() {
     <>
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 p-2">
-            <BrainCircuit className="w-8 h-8 text-sidebar-accent" />
+            <BrainCircuit className="w-8 h-8 text-sidebar-accent-foreground" />
             <span className="text-xl font-semibold text-sidebar-foreground">SummarAIze</span>
         </div>
       </SidebarHeader>
@@ -41,7 +41,7 @@ export function SidebarNav() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href} legacyBehavior passHref>
                 <SidebarMenuButton
-                  isActive={pathname === item.href}
+                  isActive={pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))}
                   tooltip={item.label}
                 >
                   <item.icon />
@@ -52,7 +52,7 @@ export function SidebarNav() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="p-2 border-t border-sidebar-border">
+      <SidebarFooter className="p-2 border-t border-sidebar-border mt-auto">
          <SidebarMenu>
             <SidebarMenuItem>
                 <SidebarMenuButton tooltip="Settings">
