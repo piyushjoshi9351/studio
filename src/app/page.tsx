@@ -104,7 +104,7 @@ export default function Home() {
                 alt={heroImage.description}
                 width={1200}
                 height={600}
-                className="w-full object-cover opacity-70"
+                className="w-full h-auto object-cover opacity-70"
                 data-ai-hint={heroImage.imageHint}
                 priority
               />
