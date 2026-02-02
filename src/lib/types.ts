@@ -11,7 +11,7 @@ export type DocumentData = {
 };
 
 export type SummaryData = {
-    summary: string;
+    summary: string[];
     citations?: {
         page: number;
         paragraph: number;

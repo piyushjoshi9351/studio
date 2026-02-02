@@ -111,7 +111,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
         documentId: document.id,
         documentName: document.fileName,
         audience: summary.audience,
-        summaryText: summary.summary,
+        summaryText: summary.summary.join("\\n"),
         citations: summary.citations || [],
         generationDate: new Date().toISOString(),
       });
@@ -137,7 +137,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
     setIsGeneratingAudio(true);
     setAudioSrc(null);
 
-    const result = await generateAudioSummaryAction({ text: summary.summary });
+    const result = await generateAudioSummaryAction({ text: summary.summary.join("\\n") });
 
     setIsGeneratingAudio(false);
     if (result.success && result.data) {
@@ -247,12 +247,11 @@ export function SummaryView({ document }: { document: DocumentData }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div
-              className="prose prose-sm dark:prose-invert max-w-none text-foreground"
-              dangerouslySetInnerHTML={{
-                __html: summary.summary.replace(/•/g, "<br/>•"),
-              }}
-            />
+            <ul className="prose prose-sm dark:prose-invert max-w-none list-disc pl-5 space-y-2">
+              {summary.summary.map((point, index) => (
+                <li key={index}>{point}</li>
+              ))}
+            </ul>
 
             {summary.citations && summary.citations.length > 0 && (
               <div>
