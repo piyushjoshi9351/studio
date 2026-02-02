@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MindMapNode } from "@/ai/flows/generate-mind-map";
 import { MindMapDisplay } from "@/components/dashboard/MindMapDisplay";
 
+export const maxDuration = 60;
 
 export default function MindMapPage() {
   const { user } = useUser();
