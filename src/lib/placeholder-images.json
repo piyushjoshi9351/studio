@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero",
-      "description": "Abstract representation of AI processing documents",
-      "imageUrl": "https://images.unsplash.com/photo-1765046255462-198d49d07dd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMGRhdGElMjB2aXN1YWxpemF0aW9ufGVufDB8fHx8MTc3MDAxOTc4OXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract data visualization"
+      "description": "Hero image for the landing page",
+      "imageUrl": "https://images.unsplash.com/photo-1568952433726-3896e3881c65?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0ZWNobm9sb2d5JTIwYWJzdHJhY3R8ZW58MHx8fHwxNzY5OTY4MTI2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "technology abstract"
     }
   ]
 }
