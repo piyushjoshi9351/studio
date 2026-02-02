@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { placeHolderImages } from "@/lib/placeholder-images";
 import {
   BrainCircuit,
   FileText,
@@ -18,8 +17,6 @@ import Link from "next/link";
 import { DemoButton } from "@/components/home/DemoButton";
 
 export default function Home() {
-  const heroImage = placeHolderImages.find((p) => p.id === "hero");
-
   const features = [
     {
       icon: BrainCircuit,
@@ -103,17 +100,14 @@ export default function Home() {
         <section className="container mx-auto px-4 sm:px-6 lg:px-8 pb-20 sm:pb-28">
           <div className="relative rounded-xl shadow-2xl overflow-hidden p-1 bg-gradient-to-b from-primary/20 to-accent/20">
             <div className="rounded-lg overflow-hidden">
-             {heroImage && (
               <Image
-                src={heroImage.imageUrl}
-                alt={heroImage.description}
+                src="/hero-image.jpg"
+                alt="Hero image for the landing page"
                 width={1200}
                 height={600}
                 className="w-full h-auto object-cover opacity-90"
-                data-ai-hint={heroImage.imageHint}
                 priority
               />
-            )}
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
           </div>

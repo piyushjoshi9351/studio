@@ -1,10 +1,10 @@
 {
   "placeholderImages": [
     {
-      "id": "hero",
-      "description": "Hero image for the landing page",
-      "imageUrl": "https://images.unsplash.com/photo-1568952433726-3896e3881c65?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0ZWNobm9sb2d5JTIwYWJzdHJhY3R8ZW58MHx8fHwxNzY5OTY4MTI2fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "technology abstract"
+      "id": "some-other-image",
+      "description": "An example image that is not the hero",
+      "imageUrl": "https://images.unsplash.com/photo-1698241379992-a1a81a70c538?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhYnN0cmFjdCUyMGRhdGElMjB2aXN1YWxpemF0aW9ufGVufDB8fHx8MTc3MjI1NTQyNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "data visualization"
     }
   ]
 }
