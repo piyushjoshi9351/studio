@@ -55,18 +55,22 @@ export function ChatView({ document }: { document: DocumentData }) {
 
   useEffect(() => {
     async function fetchSuggestions() {
-      if (document.text) {
-        setIsLoadingSuggestions(true);
-        const result = await generateSuggestedQuestionsAction({
-          documentText: document.text,
-        });
-        if (result.success && result.data) {
-          setSuggestedQuestions(result.data.questions);
-        } else {
-          console.error("Failed to fetch suggestions:", result.error);
-        }
+      if (!document.text) {
         setIsLoadingSuggestions(false);
+        return;
       }
+        
+      setIsLoadingSuggestions(true);
+      const result = await generateSuggestedQuestionsAction({
+        documentText: document.text,
+      });
+      if (result.success && result.data) {
+        setSuggestedQuestions(result.data.questions);
+      } else {
+        console.error("Failed to fetch suggestions:", result.error);
+        setSuggestedQuestions([]);
+      }
+      setIsLoadingSuggestions(false);
     }
     fetchSuggestions();
   }, [document.text]);
@@ -178,16 +182,20 @@ export function ChatView({ document }: { document: DocumentData }) {
                 <h3 className="text-lg font-semibold">AI-Suggested Questions</h3>
              </div>
              {isLoadingSuggestions ? (
-                <div className="flex justify-center items-center">
+                <div className="flex justify-center items-center py-4">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-             ) : (
+             ) : suggestedQuestions.length > 0 ? (
                 <div className="flex flex-col items-center gap-2">
                     {suggestedQuestions.map((q, i) => (
                         <Button key={i} variant="outline" size="sm" className="w-full max-w-md text-left justify-start" onClick={() => handleSuggestionClick(q)}>
                            {q}
                         </Button>
                     ))}
+                </div>
+             ) : (
+                <div className="text-center py-4">
+                    <p className="text-muted-foreground text-sm">Couldn't generate suggestions for this document.</p>
                 </div>
              )}
            </div>
