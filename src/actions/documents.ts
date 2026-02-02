@@ -24,6 +24,10 @@ import {
   generateSuggestedQuestions,
   GenerateSuggestedQuestionsInput,
 } from "@/ai/flows/generate-suggested-questions";
+import {
+  compareDocuments,
+  CompareDocumentsInput,
+} from "@/ai/flows/compare-documents";
 import mammoth from "mammoth";
 import pdf from "pdf-parse";
 
@@ -123,5 +127,15 @@ export async function generateSuggestedQuestionsAction(
       success: false,
       error: "Failed to generate suggested questions.",
     };
+  }
+}
+
+export async function compareDocumentsAction(input: CompareDocumentsInput) {
+  try {
+    const result = await compareDocuments(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error comparing documents:", error);
+    return { success: false, error: "Failed to compare documents." };
   }
 }

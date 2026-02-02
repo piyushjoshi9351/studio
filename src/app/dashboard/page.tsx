@@ -33,6 +33,8 @@ import {
   ArrowRight,
   Loader2,
   FileText,
+  GitCompareArrows,
+  BookCopy,
 } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -48,15 +50,23 @@ const actionCards = [
   },
   {
     title: "Chat with Document",
-    description: "Ask questions and get answers.",
+    description: "Ask questions and get instant answers.",
     icon: MessageSquare,
     href: "/dashboard/upload",
     color: "text-accent",
     cta: "Go to Upload",
   },
   {
+    title: "Compare Documents",
+    description: "Analyze two files side-by-side.",
+    icon: GitCompareArrows,
+    href: "/dashboard/compare",
+    color: "text-orange-500",
+    cta: "Explore Feature",
+  },
+  {
     title: "Generate Mind Map",
-    description: "Visualize key concepts.",
+    description: "Visualize key concepts and connections.",
     icon: Share2,
     href: "/dashboard/mind-map",
     color: "text-green-500",
@@ -64,10 +74,18 @@ const actionCards = [
   },
   {
     title: "Analyze Tone & Style",
-    description: "Understand the author's voice.",
+    description: "Understand the author's sentiment and voice.",
     icon: PenTool,
     href: "/dashboard/analysis",
     color: "text-yellow-500",
+    cta: "Explore Feature",
+  },
+  {
+    title: "View History",
+    description: "Review all your past summaries.",
+    icon: BookCopy,
+    href: "/dashboard/history",
+    color: "text-blue-500",
     cta: "Explore Feature",
   },
 ];
@@ -166,7 +184,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {actionCards.map((card) => (
           <Card
             key={card.title}
