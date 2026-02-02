@@ -13,6 +13,7 @@ import {
 } from "@/firebase";
 import { collection } from "firebase/firestore";
 import { extractTextFromFile } from "@/actions/documents";
+import { cn } from "@/lib/utils";
 
 export function FileUpload() {
   const [file, setFile] = useState<File | null>(null);
@@ -96,47 +97,68 @@ export function FileUpload() {
   };
 
   return (
-    <div className="w-full">
-      {!file ? (
-        <div
-          {...getRootProps()}
-          className={`relative flex w-full h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed
-          ${
-            isDragActive ? "border-primary bg-primary/10" : "border-border"
-          }
-          transition-colors cursor-pointer`}
-        >
-          <input {...getInputProps()} />
-          <UploadCloud className="h-16 w-16 text-muted-foreground" />
-          <p className="mt-4 text-muted-foreground">
+    <div className="w-full space-y-6">
+      <div
+        {...getRootProps()}
+        className={cn(
+          "relative flex w-full h-64 flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all duration-300 ease-in-out cursor-pointer group",
+          isDragActive
+            ? "border-primary bg-primary/10"
+            : "border-border hover:border-primary/50 hover:bg-muted/50"
+        )}
+      >
+        <input {...getInputProps()} />
+        
+        <div className={cn(
+          "flex flex-col items-center justify-center text-center transition-opacity duration-300",
+          file ? "opacity-0" : "opacity-100"
+        )}>
+          <UploadCloud className={cn(
+            "h-16 w-16 text-muted-foreground transition-transform duration-300",
+            isDragActive && "scale-110 -translate-y-2 text-primary"
+          )} />
+          <p className="mt-4 text-lg font-medium text-foreground">
             {isDragActive
-              ? "Drop the file here..."
-              : "Drag & drop a file here, or click to select"}
+              ? "Drop it like it's hot!"
+              : "Drag & drop a file here"}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">PDF or DOCX</p>
-        </div>
-      ) : (
-        <div className="relative flex w-full h-64 flex-col items-center justify-center rounded-lg border-2 border-primary bg-primary/5">
-          <File className="h-16 w-16 text-primary" />
-          <p className="mt-4 font-medium text-foreground">{file.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {Math.round(file.size / 1024)} KB
+          <p className="text-sm text-muted-foreground mt-1">
+             or click to select a file (PDF or DOCX)
           </p>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2"
-            onClick={removeFile}
-          >
-            <X className="h-5 w-5" />
-          </Button>
         </div>
-      )}
+
+        {file && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+             <div className="relative w-full max-w-sm rounded-lg border bg-background p-4 shadow-sm">
+                <div className="flex items-start gap-4">
+                    <File className="h-10 w-10 text-primary flex-shrink-0" />
+                    <div className="flex-grow overflow-hidden">
+                        <p className="font-semibold text-foreground truncate">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                            {Math.round(file.size / 1024)} KB &bull; {file.type}
+                        </p>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 flex-shrink-0 -mt-1 -mr-1"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile();
+                        }}
+                    >
+                        <X className="h-5 w-5" />
+                    </Button>
+                </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <Button
         onClick={handleUpload}
         disabled={!file || loading}
-        className="w-full mt-6"
+        className="w-full"
         size="lg"
       >
         {loading ? (
