@@ -188,7 +188,13 @@ export function ChatView({ document }: { document: DocumentData }) {
              ) : suggestedQuestions.length > 0 ? (
                 <div className="flex flex-col items-center gap-2">
                     {suggestedQuestions.map((q, i) => (
-                        <Button key={i} variant="outline" size="sm" className="w-full max-w-md text-left justify-start" onClick={() => handleSuggestionClick(q)}>
+                        <Button
+                          key={i}
+                          variant="outline"
+                          size="sm"
+                          className="w-full max-w-md text-left justify-start h-auto whitespace-normal py-2"
+                          onClick={() => handleSuggestionClick(q)}
+                        >
                            {q}
                         </Button>
                     ))}
