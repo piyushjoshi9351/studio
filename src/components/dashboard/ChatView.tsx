@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { chatAction } from '@/actions/documents';
+import { chatAction, generateSuggestedQuestionsAction } from '@/actions/documents';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, Mic } from 'lucide-react';
+import { Loader2, Send, Mic, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DocumentData } from '@/lib/types';
 import { useUser } from '@/firebase';
@@ -30,7 +30,6 @@ const formSchema = z.object({
   message: z.string().min(1, { message: 'Message cannot be empty.' }),
 });
 
-// Extend window type for SpeechRecognition
 declare global {
   interface Window {
     SpeechRecognition: typeof SpeechRecognition;
@@ -42,6 +41,9 @@ export function ChatView({ document }: { document: DocumentData }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
+
   const { user } = useUser();
   const { toast } = useToast();
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -51,9 +53,27 @@ export function ChatView({ document }: { document: DocumentData }) {
     defaultValues: { message: '' },
   });
 
+  useEffect(() => {
+    async function fetchSuggestions() {
+      if (document.text) {
+        setIsLoadingSuggestions(true);
+        const result = await generateSuggestedQuestionsAction({
+          documentText: document.text,
+        });
+        if (result.success && result.data) {
+          setSuggestedQuestions(result.data.questions);
+        } else {
+          console.error("Failed to fetch suggestions:", result.error);
+        }
+        setIsLoadingSuggestions(false);
+      }
+    }
+    fetchSuggestions();
+  }, [document.text]);
+
   const onSubmit = useCallback(
     async (values: z.infer<typeof formSchema>) => {
-      if (loading) return; // Prevent multiple submissions
+      if (loading) return;
       setLoading(true);
       const userMessage: ChatMessage = { role: 'user', content: values.message };
       setMessages((prev) => [...prev, userMessage]);
@@ -90,23 +110,15 @@ export function ChatView({ document }: { document: DocumentData }) {
 
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
-    recognition.interimResults = true;
+    recognition.interimResults = false;
     recognition.lang = 'en-US';
     recognitionRef.current = recognition;
 
     recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((result) => result[0])
-        .map((result) => result.transcript)
-        .join('');
+      const transcript = event.results[0][0].transcript;
       form.setValue('message', transcript, { shouldValidate: true });
-
-      const lastResult = event.results[event.results.length - 1];
-      if (lastResult.isFinal) {
-        recognition.stop();
-        if (transcript.trim()) {
-          setTimeout(() => form.handleSubmit(onSubmit)(), 100);
-        }
+       if (transcript.trim()) {
+        form.handleSubmit(onSubmit)();
       }
     };
 
@@ -150,53 +162,80 @@ export function ChatView({ document }: { document: DocumentData }) {
       setIsRecording(true);
     }
   };
+  
+  const handleSuggestionClick = (question: string) => {
+    form.setValue('message', question);
+    form.handleSubmit(onSubmit)();
+  };
 
   return (
     <div className="flex flex-col h-[70vh]">
       <ScrollArea className="flex-1 p-4">
-        <div className="space-y-6">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex items-start gap-3 ${
-                message.role === 'user' ? 'justify-end' : ''
-              }`}
-            >
-              {message.role === 'assistant' && (
+        {messages.length === 0 && !loading ? (
+           <div className="text-center py-8">
+             <div className="flex justify-center items-center mb-4">
+                <Sparkles className="h-6 w-6 mr-2 text-primary" />
+                <h3 className="text-lg font-semibold">AI-Suggested Questions</h3>
+             </div>
+             {isLoadingSuggestions ? (
+                <div className="flex justify-center items-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+             ) : (
+                <div className="flex flex-col items-center gap-2">
+                    {suggestedQuestions.map((q, i) => (
+                        <Button key={i} variant="outline" size="sm" className="w-full max-w-md text-left justify-start" onClick={() => handleSuggestionClick(q)}>
+                           {q}
+                        </Button>
+                    ))}
+                </div>
+             )}
+           </div>
+        ) : (
+          <div className="space-y-6">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex items-start gap-3 ${
+                  message.role === 'user' ? 'justify-end' : ''
+                }`}
+              >
+                {message.role === 'assistant' && (
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>AI</AvatarFallback>
+                  </Avatar>
+                )}
+                <div
+                  className={`rounded-lg px-4 py-3 max-w-lg ${
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                </div>
+                {message.role === 'user' && (
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.photoURL || undefined} alt="User avatar" />
+                    <AvatarFallback>
+                      {user?.displayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ))}
+            {loading && !isRecording && (
+              <div className="flex items-start gap-3">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>AI</AvatarFallback>
                 </Avatar>
-              )}
-              <div
-                className={`rounded-lg px-4 py-3 max-w-lg ${
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <div className="rounded-lg px-4 py-3 bg-muted flex items-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
               </div>
-              {message.role === 'user' && (
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.photoURL || undefined} alt="User avatar" />
-                  <AvatarFallback>
-                    {user?.email?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          ))}
-          {loading && !isRecording && (
-            <div className="flex items-start gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>AI</AvatarFallback>
-              </Avatar>
-              <div className="rounded-lg px-4 py-3 bg-muted flex items-center">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </ScrollArea>
       <div className="border-t p-4">
         <Form {...form}>

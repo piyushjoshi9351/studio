@@ -20,6 +20,10 @@ import {
   generateAudioSummary,
   GenerateAudioSummaryInput,
 } from "@/ai/flows/generate-audio-summary";
+import {
+  generateSuggestedQuestions,
+  GenerateSuggestedQuestionsInput,
+} from "@/ai/flows/generate-suggested-questions";
 import mammoth from "mammoth";
 import pdf from "pdf-parse";
 
@@ -104,5 +108,20 @@ export async function generateAudioSummaryAction(
   } catch (error) {
     console.error("Error generating audio summary:", error);
     return { success: false, error: "Failed to generate audio summary." };
+  }
+}
+
+export async function generateSuggestedQuestionsAction(
+  input: GenerateSuggestedQuestionsInput
+) {
+  try {
+    const result = await generateSuggestedQuestions(input);
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Error generating suggested questions:", error);
+    return {
+      success: false,
+      error: "Failed to generate suggested questions.",
+    };
   }
 }
