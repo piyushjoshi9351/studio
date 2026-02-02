@@ -112,7 +112,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
         documentName: document.fileName,
         audience: summary.audience,
         summaryText: summary.summary,
-        citations: summary.citations,
+        citations: summary.citations || [],
         generationDate: new Date().toISOString(),
       });
 
@@ -254,16 +254,18 @@ export function SummaryView({ document }: { document: DocumentData }) {
               }}
             />
 
-            <div>
-              <h4 className="font-semibold mb-2">Citations</h4>
-              <div className="space-y-1 text-xs text-muted-foreground">
-                {summary.citations.map((citation, index) => (
-                  <p key={index}>
-                    - Page {citation.page}, Paragraph {citation.paragraph}
-                  </p>
-                ))}
+            {summary.citations && summary.citations.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-2">Citations</h4>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  {summary.citations.map((citation, index) => (
+                    <p key={index}>
+                      - Page {citation.page}, Paragraph {citation.paragraph}
+                    </p>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
           <CardFooter className="flex-wrap gap-2">
             <Button onClick={handleSave} disabled={saving}>

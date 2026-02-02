@@ -28,7 +28,8 @@ const GenerateAudienceSpecificSummaryOutputSchema = z.object({
   summary: z.string().describe('The audience-specific summary of the document.'),
   citations: z
     .array(z.object({page: z.number(), paragraph: z.number()}))
-    .describe('List of citation references.'),
+    .describe('List of citation references.')
+    .optional(),
 });
 export type GenerateAudienceSpecificSummaryOutput = z.infer<
   typeof GenerateAudienceSpecificSummaryOutputSchema
@@ -47,7 +48,7 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert summarizer, tailoring summaries to specific audiences.
 
   Summarize the following document for the given audience. Provide the summary in bullet points.
-  Include citation references (page and paragraph numbers) for each bullet point. For citations, make your best guess if page/paragraph numbers are not explicitly available in the text, you can use page 1 and an approximate paragraph number.
+  Include citation references (page and paragraph numbers) for each bullet point if possible. For citations, make your best guess if page/paragraph numbers are not explicitly available in the text, you can use page 1 and an approximate paragraph number. If you cannot find any citations, do not include the citations field.
 
   The summary must be in {{{language}}}.
 
