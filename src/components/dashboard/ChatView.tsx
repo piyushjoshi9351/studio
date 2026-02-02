@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -51,92 +51,105 @@ export function ChatView({ document }: { document: DocumentData }) {
     defaultValues: { message: '' },
   });
 
+  const onSubmit = useCallback(
+    async (values: z.infer<typeof formSchema>) => {
+      if (loading) return; // Prevent multiple submissions
+      setLoading(true);
+      const userMessage: ChatMessage = { role: 'user', content: values.message };
+      setMessages((prev) => [...prev, userMessage]);
+      form.reset();
+
+      const result = await chatAction({
+        documentText: document.text,
+        userQuestion: values.message,
+      });
+
+      setLoading(false);
+      if (result.success && result.data) {
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: result.data.answer,
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error || 'Failed to get a response.',
+          variant: 'destructive',
+        });
+        setMessages((prev) => prev.slice(0, -1));
+      }
+    },
+    [document.text, form, toast, loading]
+  );
+
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
+    if (!SpeechRecognition) return;
 
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map((result) => result[0])
-          .map((result) => result.transcript)
-          .join('');
-        form.setValue('message', transcript);
-      };
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
 
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        toast({
-          title: 'Microphone Error',
-          description:
-            event.error === 'not-allowed'
-              ? 'Permission to use microphone was denied.'
-              : 'An error occurred with the microphone.',
-          variant: 'destructive',
-        });
-        setIsRecording(false);
-      };
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0])
+        .map((result) => result.transcript)
+        .join('');
+      form.setValue('message', transcript, { shouldValidate: true });
 
-      recognition.onend = () => {
-        setIsRecording(false);
-      };
+      const lastResult = event.results[event.results.length - 1];
+      if (lastResult.isFinal) {
+        recognition.stop();
+        if (transcript.trim()) {
+          setTimeout(() => form.handleSubmit(onSubmit)(), 100);
+        }
+      }
+    };
 
-      recognitionRef.current = recognition;
-    } else {
-      // Don't show a toast on load, only when the user tries to use it.
-    }
-  }, [form, toast]);
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      toast({
+        title: 'Microphone Error',
+        description:
+          event.error === 'not-allowed'
+            ? 'Permission to use microphone was denied.'
+            : 'An error occurred with the microphone.',
+        variant: 'destructive',
+      });
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    return () => {
+      recognition.stop();
+    };
+  }, [form, toast, onSubmit]);
 
   const handleMicClick = () => {
     if (!recognitionRef.current) {
-        toast({
-            title: 'Browser Not Supported',
-            description: 'Your browser does not support speech recognition.',
-            variant: 'destructive',
-        });
-        return;
+      toast({
+        title: 'Browser Not Supported',
+        description: 'Your browser does not support speech recognition.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     if (isRecording) {
       recognitionRef.current.stop();
     } else {
+      form.reset();
       recognitionRef.current.start();
       setIsRecording(true);
     }
   };
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setLoading(true);
-    const userMessage: ChatMessage = { role: 'user', content: values.message };
-    setMessages((prev) => [...prev, userMessage]);
-    form.reset();
-
-    const result = await chatAction({
-      documentText: document.text,
-      userQuestion: values.message,
-    });
-
-    setLoading(false);
-    if (result.success && result.data) {
-      const assistantMessage: ChatMessage = {
-        role: 'assistant',
-        content: result.data.answer,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    } else {
-      toast({
-        title: 'Error',
-        description: result.error || 'Failed to get a response.',
-        variant: 'destructive',
-      });
-      // Optionally remove the user's message if the API call fails
-      setMessages((prev) => prev.slice(0, -1));
-    }
-  }
 
   return (
     <div className="flex flex-col h-[70vh]">
@@ -165,6 +178,7 @@ export function ChatView({ document }: { document: DocumentData }) {
               </div>
               {message.role === 'user' && (
                 <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.photoURL || undefined} alt="User avatar" />
                   <AvatarFallback>
                     {user?.email?.charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -197,7 +211,11 @@ export function ChatView({ document }: { document: DocumentData }) {
                 <FormItem className="flex-1">
                   <FormControl>
                     <Input
-                      placeholder={isRecording ? "Listening..." : "Ask a question about the document..."}
+                      placeholder={
+                        isRecording
+                          ? 'Listening...'
+                          : 'Ask a question about the document...'
+                      }
                       autoComplete="off"
                       {...field}
                       disabled={loading}
@@ -207,17 +225,23 @@ export function ChatView({ document }: { document: DocumentData }) {
                 </FormItem>
               )}
             />
-             <Button
+            <Button
               type="button"
               size="icon"
               variant={isRecording ? 'destructive' : 'outline'}
               onClick={handleMicClick}
               disabled={loading}
             >
-              <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
+              <Mic
+                className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`}
+              />
               <span className="sr-only">Ask with voice</span>
             </Button>
-            <Button type="submit" size="icon" disabled={loading || isRecording}>
+            <Button
+              type="submit"
+              size="icon"
+              disabled={loading || isRecording}
+            >
               <Send className="h-4 w-4" />
               <span className="sr-only">Send</span>
             </Button>
