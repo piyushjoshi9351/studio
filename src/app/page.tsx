@@ -76,7 +76,7 @@ export default function Home() {
       <main className="flex-grow">
         <section className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
           <div
-            className="absolute inset-0 top-0 -z-10 h-full w-full bg-white bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] dark:bg-black dark:bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)]"></div>
+            className="absolute inset-0 top-0 -z-10 h-full w-full animate-grid-move bg-white bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] dark:bg-black dark:bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)]"></div>
           <div className="absolute top-0 left-0 -z-10 h-2/3 w-full bg-gradient-to-b from-primary/10 to-transparent"></div>
 
           <div className="max-w-4xl mx-auto">
