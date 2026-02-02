@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -32,6 +33,7 @@ export async function compareDocuments(input: CompareDocumentsInput): Promise<Co
 
 const prompt = ai.definePrompt({
   name: 'compareDocumentsPrompt',
+  model: 'googleai/gemini-2.5-flash',
   input: {schema: CompareDocumentsInputSchema},
   output: {schema: CompareDocumentsOutputSchema},
   prompt: `You are an expert research analyst. Your task is to compare two documents and provide a concise analysis of their similarities and differences.
@@ -51,7 +53,7 @@ const prompt = ai.definePrompt({
   2.  **Differences**: A list of the most significant contrasting points, arguments, or conclusions.
   3.  **Conclusion**: A brief summary paragraph that encapsulates the overall relationship between the two documents (e.g., do they support each other, contradict, or discuss different facets of the same topic?).
 
-  Return the output as a single JSON object that conforms to the output schema.
+  Your response MUST be a single, valid JSON object that conforms to the output schema. Do not include any other text, markdown, or explanations outside of the JSON object.
   `,
 });
 

@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -35,6 +36,7 @@ export async function generateSuggestedQuestions(
 
 const prompt = ai.definePrompt({
   name: 'generateSuggestedQuestionsPrompt',
+  model: 'googleai/gemini-2.5-flash',
   input: { schema: GenerateSuggestedQuestionsInputSchema },
   output: { schema: GenerateSuggestedQuestionsOutputSchema },
   prompt: `You are an expert at analyzing documents and identifying key topics for discussion.
@@ -43,7 +45,7 @@ const prompt = ai.definePrompt({
   
   Focus on questions that encourage deeper understanding of the document's main points, arguments, or data.
   
-  Return the output as a single JSON object that conforms to the output schema.
+  Your response MUST be a single, valid JSON object that conforms to the output schema. Do not add any introductory text or explanation. Your response should start with { and end with }.
   
   Document Text:
   {{{documentText}}}

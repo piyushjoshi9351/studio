@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -19,7 +20,7 @@ const ChatWithDocumentInputSchema = z.object({
 export type ChatWithDocumentInput = z.infer<typeof ChatWithDocumentInputSchema>;
 
 const ChatWithDocumentOutputSchema = z.object({
-  answer: z.string().describe('The answer to the user question, with citations.'),
+  answer: z.string().describe("The complete, single-string answer to the user's question, with any citations included directly in the text."),
 });
 
 export type ChatWithDocumentOutput = z.infer<typeof ChatWithDocumentOutputSchema>;
@@ -30,9 +31,16 @@ export async function chatWithDocument(input: ChatWithDocumentInput): Promise<Ch
 
 const chatWithDocumentPrompt = ai.definePrompt({
   name: 'chatWithDocumentPrompt',
+  model: 'googleai/gemini-2.5-flash',
   input: {schema: ChatWithDocumentInputSchema},
   output: {schema: ChatWithDocumentOutputSchema},
-  prompt: `You are a helpful assistant that answers questions about a document.  You will be given the document text and a user question.  You must answer the question using only the information in the document.  If you cannot answer the question from the document alone, say that you cannot answer the question.  Provide citations to the page or paragraph numbers in the document where you found the information to answer the question.
+  prompt: `You are a helpful assistant that answers questions about a document. You will be given the document text and a user question. You must answer the question using only the information in the document.
+
+If you cannot answer the question from the document alone, state that clearly.
+
+Provide citations to the page or paragraph numbers directly in the text where you found the information, for example: "The sky is blue [page 1, para 2]."
+
+Your response should be a single block of text, formatted as a JSON object with a single key "answer".
 
 Document Text:
 {{{documentText}}}

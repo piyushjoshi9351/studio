@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -31,6 +32,7 @@ export async function analyzeDocumentTone(input: AnalyzeDocumentToneInput): Prom
 
 const prompt = ai.definePrompt({
   name: 'analyzeDocumentTonePrompt',
+  model: 'googleai/gemini-2.5-flash',
   input: {schema: AnalyzeDocumentToneInputSchema},
   output: {schema: AnalyzeDocumentToneOutputSchema},
   prompt: `You are an expert linguistic analyst. Analyze the following document to determine its sentiment, tone, and writing style.
@@ -42,7 +44,7 @@ const prompt = ai.definePrompt({
   4.  **Emoji:** A single emoji that best represents the overall feeling of the text.
   5.  **Summary:** A concise, one-paragraph summary explaining your analysis of the document's tone and style.
 
-  Return the output as a single JSON object that conforms to the output schema.
+  Your response MUST be a single, valid JSON object that conforms to the output schema. Do not include any other text, markdown, or explanations outside of the JSON object.
 
   Document Text:
   {{{documentText}}}

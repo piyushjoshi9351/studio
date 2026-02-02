@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -43,15 +44,18 @@ export async function generateAudienceSpecificSummary(
 
 const prompt = ai.definePrompt({
   name: 'generateAudienceSpecificSummaryPrompt',
+  model: 'googleai/gemini-2.5-flash',
   input: {schema: GenerateAudienceSpecificSummaryInputSchema},
   output: {schema: GenerateAudienceSpecificSummaryOutputSchema},
   prompt: `You are an expert summarizer, tailoring summaries to specific audiences.
 
   Summarize the following document for the given audience. Provide the summary as a JSON object containing a 'summary' field, which should be an array of strings. Each string in the array should be a single bullet point of the summary.
 
-  If possible, also include a 'citations' field with citation references (page and paragraph numbers). For citations, make your best guess if page/paragraph numbers are not explicitly available in the text, you can use page 1 and an approximate paragraph number. If you cannot find any citations, you can omit the citations field from the JSON output.
+  If possible, also include a 'citations' field with citation references (page and paragraph numbers). For citations, make your best guess if page/paragraph numbers are not explicitly available in the text. If you cannot find any citations, omit the citations field entirely from the JSON output.
 
   The summary must be in {{{language}}}.
+
+  Your response MUST be a single, valid JSON object that conforms to the output schema. Do not include any other text, markdown, or explanations outside of the JSON object.
 
   Audience: {{{audience}}}
 

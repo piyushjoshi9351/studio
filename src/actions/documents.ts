@@ -1,3 +1,4 @@
+
 "use server";
 
 import {
@@ -31,6 +32,17 @@ import {
 import mammoth from "mammoth";
 import pdf from "pdf-parse";
 
+async function safeAction<T>(action: Promise<T>): Promise<{ success: true; data: T } | { success: false; error: string }> {
+  try {
+    const data = await action;
+    return { success: true, data };
+  } catch (error) {
+    console.error("Action failed:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return { success: false, error: errorMessage };
+  }
+}
+
 export async function extractTextFromFile({
   fileBuffer,
   fileType,
@@ -62,80 +74,35 @@ export async function extractTextFromFile({
 export async function generateSummaryAction(
   input: GenerateAudienceSpecificSummaryInput
 ) {
-  try {
-    const result = await generateAudienceSpecificSummary(input);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("Error generating summary:", error);
-    return { success: false, error: "Failed to generate summary." };
-  }
+  return safeAction(generateAudienceSpecificSummary(input));
 }
 
 export async function chatAction(input: ChatWithDocumentInput) {
-  try {
-    const result = await chatWithDocument(input);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("Error in chat action:", error);
-    return { success: false, error: "Failed to get chat response." };
-  }
+  return safeAction(chatWithDocument(input));
 }
 
 export async function generateMindMapAction(input: GenerateMindMapInput) {
-  try {
-    const result = await generateMindMap(input);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("Error generating mind map:", error);
-    return { success: false, error: "Failed to generate mind map." };
-  }
+  return safeAction(generateMindMap(input));
 }
 
 export async function analyzeDocumentToneAction(
   input: AnalyzeDocumentToneInput
 ) {
-  try {
-    const result = await analyzeDocumentTone(input);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("Error analyzing document tone:", error);
-    return { success: false, error: "Failed to analyze document." };
-  }
+  return safeAction(analyzeDocumentTone(input));
 }
 
 export async function generateAudioSummaryAction(
   input: GenerateAudioSummaryInput
 ) {
-  try {
-    const result = await generateAudioSummary(input);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("Error generating audio summary:", error);
-    return { success: false, error: "Failed to generate audio summary." };
-  }
+  return safeAction(generateAudioSummary(input));
 }
 
 export async function generateSuggestedQuestionsAction(
   input: GenerateSuggestedQuestionsInput
 ) {
-  try {
-    const result = await generateSuggestedQuestions(input);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("Error generating suggested questions:", error);
-    return {
-      success: false,
-      error: "Failed to generate suggested questions.",
-    };
-  }
+  return safeAction(generateSuggestedQuestions(input));
 }
 
 export async function compareDocumentsAction(input: CompareDocumentsInput) {
-  try {
-    const result = await compareDocuments(input);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error("Error comparing documents:", error);
-    return { success: false, error: "Failed to compare documents." };
-  }
+  return safeAction(compareDocuments(input));
 }

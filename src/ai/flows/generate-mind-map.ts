@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -40,6 +41,7 @@ export async function generateMindMap(
 
 const prompt = ai.definePrompt({
   name: 'generateMindMapPrompt',
+  model: 'googleai/gemini-2.5-flash',
   input: {schema: GenerateMindMapInputSchema},
   output: {schema: MindMapNodeSchema},
   prompt: `You are an expert at creating mind maps from text. Analyze the following document and identify the central concept, main topics, and sub-topics. Structure this as a hierarchical mind map.
@@ -49,7 +51,7 @@ Each child node should represent a major topic.
 Sub-topics should be nested as children of the main topics.
 Generate unique IDs for each node.
 
-Return the output as a single JSON object that conforms to the output schema.
+Your response MUST be a single, valid JSON object that conforms to the output schema. Do not include any other text, markdown, or explanations outside of the JSON object.
 
 Document Text:
 {{{documentText}}}
