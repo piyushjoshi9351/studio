@@ -30,7 +30,8 @@ import { useToast } from "@/hooks/use-toast";
 import { MindMapNode } from "@/ai/flows/generate-mind-map";
 import { MindMapDisplay } from "@/components/dashboard/MindMapDisplay";
 
-export const maxDuration = 60;
+// Increased to 300 seconds (5 minutes) to handle large documents
+export const maxDuration = 300;
 
 export default function MindMapPage() {
   const { user } = useUser();

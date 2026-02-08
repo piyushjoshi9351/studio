@@ -55,19 +55,28 @@ export async function extractTextFromFile({
   try {
     if (fileType === "application/pdf") {
       const data = await pdf(buffer);
+      if (!data.text || data.text.trim().length === 0) {
+        throw new Error(
+          "PDF appears to be empty or contains no extractable text. This might be a scanned image PDF without OCR."
+        );
+      }
       return data.text;
     } else if (
       fileType ===
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ) {
       const { value } = await mammoth.extractRawText({ buffer });
+      if (!value || value.trim().length === 0) {
+        throw new Error("Document appears to be empty or has no extractable text.");
+      }
       return value;
     } else {
       throw new Error("Unsupported file type");
     }
   } catch (error) {
     console.error("Error extracting text:", error);
-    throw new Error("Failed to extract text from file.");
+    const errorMessage = error instanceof Error ? error.message : "Failed to extract text from file.";
+    throw new Error(errorMessage);
   }
 }
 

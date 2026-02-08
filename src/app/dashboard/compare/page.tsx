@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+
+// Support for large document comparison
+export const maxDuration = 300;
 import {
   Card,
   CardContent,

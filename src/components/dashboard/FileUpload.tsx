@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useTransition } from "react";
 import { useDropzone } from "react-dropzone";
 import { useRouter } from "next/navigation";
 import { Loader2, File, UploadCloud, X } from "lucide-react";
@@ -12,12 +12,11 @@ import {
   addDocumentNonBlocking,
 } from "@/firebase";
 import { collection } from "firebase/firestore";
-import { extractTextFromFile } from "@/actions/documents";
 import { cn } from "@/lib/utils";
 
 export function FileUpload() {
   const [file, setFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useUser();
@@ -30,7 +29,22 @@ export function FileUpload() {
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
+    onDrop: (acceptedFiles) => {
+      if (acceptedFiles.length > 0) {
+        const file = acceptedFiles[0];
+        // Validate file size (max 150MB to support large documents like 200+ page PDFs)
+        const maxSizeMB = 150;
+        if (file.size > maxSizeMB * 1024 * 1024) {
+          toast({
+            title: "File Too Large",
+            description: `Maximum file size is ${maxSizeMB}MB. Your file is ${(file.size / 1024 / 1024).toFixed(1)}MB.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        onDrop(acceptedFiles);
+      }
+    },
     accept: {
       "application/pdf": [".pdf"],
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
@@ -50,46 +64,71 @@ export function FileUpload() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const fileBuffer = await file.arrayBuffer();
+    startTransition(async () => {
+      try {
+        const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
+        const estimatedPages = Math.ceil(file.size / 4000); // Rough estimate: ~4KB per page
 
-      toast({
-        title: "Processing Document...",
-        description: "Extracting text can take a moment, especially for large files. Please wait.",
-      });
+        toast({
+          title: "Processing Document...",
+          description: `File size: ${fileSizeMB}MB (~${estimatedPages} pages). Text extraction in progress... This may take a minute for large files.`,
+        });
 
-      const text = await extractTextFromFile({
-        fileBuffer,
-        fileType: file.type,
-      });
+        // Use API route for large files instead of server action
+        const formData = new FormData();
+        formData.append("file", file);
 
-      const docsRef = collection(firestore, "users", user.uid, "documents");
-      const docRef = await addDocumentNonBlocking(docsRef, {
-        userId: user.uid,
-        fileName: file.name,
-        uploadDate: new Date().toISOString(),
-        fileType: file.type,
-        fileSize: file.size,
-        text: text,
-      });
+        const extractResponse = await fetch("/api/extract-text", {
+          method: "POST",
+          body: formData,
+        });
 
-      toast({
-        title: "Upload Successful",
-        description: `${file.name} has been processed.`,
-      });
+        if (!extractResponse.ok) {
+          const errorData = await extractResponse.json();
+          throw new Error(errorData.error || "Failed to extract text from file");
+        }
 
-      router.push(`/dashboard/document/${docRef.id}`);
-    } catch (error: any) {
-      console.error("Upload failed:", error);
-      toast({
-        title: "Upload Failed",
-        description:
-          "The server took too long to respond. This can happen with large files. Please try again with a smaller document.",
-        variant: "destructive",
-      });
-      setLoading(false);
-    }
+        const { text } = await extractResponse.json();
+
+        const docsRef = collection(firestore, "users", user.uid, "documents");
+        const docRef = await addDocumentNonBlocking(docsRef, {
+          userId: user.uid,
+          fileName: file.name,
+          uploadDate: new Date().toISOString(),
+          fileType: file.type,
+          fileSize: file.size,
+          text: text,
+        });
+
+        toast({
+          title: "Upload Successful",
+          description: `${file.name} has been processed.`,
+        });
+
+        router.push(`/dashboard/document/${docRef.id}`);
+      } catch (error: any) {
+        console.error("Upload failed:", error);
+        let errorDescription = "Unknown error occurred";
+        
+        if (error?.message?.includes("Failed")) {
+          errorDescription = error.message;
+        } else if (error?.message?.includes("fetch") || error instanceof TypeError) {
+          errorDescription = "Network error or connection interrupted. Please try again.";
+        } else if (error?.message?.includes("timeout")) {
+          errorDescription = "Request took too long. File might be too large or network too slow.";
+        } else if (error?.message?.includes("413") || error?.message?.includes("Payload")) {
+          errorDescription = "File is too large to process. Maximum size is 150MB.";
+        } else {
+          errorDescription = error?.message || errorDescription;
+        }
+        
+        toast({
+          title: "Upload Failed",
+          description: errorDescription,
+          variant: "destructive",
+        });
+      }
+    });
   };
 
   const removeFile = () => {
@@ -157,11 +196,11 @@ export function FileUpload() {
 
       <Button
         onClick={handleUpload}
-        disabled={!file || loading}
+        disabled={!file || isPending}
         className="w-full"
         size="lg"
       >
-        {loading ? (
+        {isPending ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Uploading & Processing...

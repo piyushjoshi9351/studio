@@ -14,12 +14,18 @@ service cloud.firestore {
     match /{path=**}/summaries/{summaryId} {
       // Allow any authenticated user to perform the 'list' part of the query.
       // This is necessary for collection group queries. The actual security is
-      // enforced by the 'get' rule below.
+      // enforced by checking the userId field in the document.
       allow list: if request.auth != null;
 
       // For each summary the query tries to return, this rule checks that
-      // the authenticated user is the owner of the data.
-      allow get: if request.auth != null && request.auth.uid == resource.data.userId;
+      // the authenticated user is the owner of the data by validating the userId field.
+      allow get, read: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Additional rule to handle write operations to summaries
+    match /users/{userId}/summaries/{summaryId} {
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

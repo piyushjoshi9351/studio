@@ -1,7 +1,8 @@
 import { FileUpload } from "@/components/dashboard/FileUpload";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const maxDuration = 60; // Increase timeout to 60 seconds
+// Increased to 300 seconds (5 minutes) to handle large documents (100+ pages)
+export const maxDuration = 300;
 
 export default function UploadPage() {
   return (

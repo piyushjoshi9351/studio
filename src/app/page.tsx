@@ -14,8 +14,14 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { DemoButton } from "@/components/home/DemoButton";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { placeHolderImages } from "@/lib/placeholder-images";
+
+// Dynamically import the demo button to reduce initial bundle
+const DemoButton = dynamic(() => import("@/components/home/DemoButton").then(mod => ({ default: mod.DemoButton })), {
+  loading: () => <div className="h-10 w-32 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />,
+});
 
 export default function Home() {
   const features = [

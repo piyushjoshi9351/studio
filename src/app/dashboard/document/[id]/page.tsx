@@ -14,6 +14,9 @@ import { useParams } from "next/navigation";
 import { doc } from "firebase/firestore";
 import { DocumentData } from "@/lib/types";
 
+// Support for large documents and AI processing
+export const maxDuration = 300;
+
 export default function DocumentPage() {
   const params = useParams();
   const id = params.id as string;

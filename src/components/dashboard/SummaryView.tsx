@@ -101,8 +101,6 @@ export function SummaryView({ document }: { document: DocumentData }) {
         firestore,
         "users",
         user.uid,
-        "documents",
-        document.id,
         "summaries"
       );
 
@@ -111,7 +109,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
         documentId: document.id,
         documentName: document.fileName,
         audience: summary.audience,
-        summaryText: summary.summary.join("\\n"),
+        summaryText: summary.summary.join("\n"),
         citations: summary.citations || [],
         generationDate: new Date().toISOString(),
       });
@@ -137,7 +135,7 @@ export function SummaryView({ document }: { document: DocumentData }) {
     setIsGeneratingAudio(true);
     setAudioSrc(null);
 
-    const result = await generateAudioSummaryAction({ text: summary.summary.join("\\n") });
+    const result = await generateAudioSummaryAction({ text: summary.summary.join("\n") });
 
     setIsGeneratingAudio(false);
     if (result.success && result.data) {
